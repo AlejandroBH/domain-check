@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Verificador de disponibilidad de dominios - Analiza múltiples dominios con WHOIS">
+    <title>Domain Availability Checker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="16" cy="16" r="14" stroke="url(#gradient)" stroke-width="2"/>
+                        <path d="M16 8V24M8 16H24" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <h1>Domain Checker</h1>
+                </div>
+                <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="card upload-section">
+                <h2>📁 Cargar Dominios</h2>
+                <div id="dropZone" class="drop-zone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="drop-zone-text">Arrastra tu archivo .txt aquí</p>
+                    <p class="drop-zone-subtext">o haz clic para seleccionar</p>
+                    <input type="file" id="fileInput" accept=".txt" hidden>
+                </div>
+                <div id="fileInfo" class="file-info hidden">
+                    <div class="file-info-content">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <div>
+                            <p class="file-name"></p>
+                            <p class="file-count"></p>
+                        </div>
+                    </div>
+                    <button id="clearFile" class="btn-icon" aria-label="Eliminar archivo">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section class="card config-section">
+                <h2>⚙️ Configuración</h2>
+                
+                <div class="config-group">
+                    <label for="extensionSelect">Extensiones de Dominio</label>
+                    <div class="extension-container">
+                        <div id="selectedExtensions" class="selected-extensions"></div>
+                        <select id="extensionSelect" class="select-input">
+                            <option value="">Seleccionar extensión...</option>
+                            <option value=".com">.com</option>
+                            <option value=".net">.net</option>
+                            <option value=".org">.org</option>
+                            <option value=".cl">.cl</option>
+                            <option value=".ar">.ar</option>
+                            <option value=".mx">.mx</option>
+                            <option value=".co">.co</option>
+                            <option value=".pe">.pe</option>
+                            <option value=".app">.app</option>
+                            <option value=".dev">.dev</option>
+                            <option value=".io">.io</option>
+                            <option value=".ai">.ai</option>
+                            <option value=".tech">.tech</option>
+                            <option value=".online">.online</option>
+                            <option value=".site">.site</option>
+                            <option value=".store">.store</option>
+                        </select>
+                    </div>
+                    <p class="help-text">Selecciona las extensiones que deseas verificar</p>
+                </div>
+
+                <div class="config-group">
+                    <label for="delayInput">Delay entre consultas (ms)</label>
+                    <div class="input-with-badge">
+                        <input type="number" id="delayInput" class="number-input" min="1000" max="5000" step="500" value="2000">
+                        <span class="badge">2s</span>
+                    </div>
+                    <p class="help-text">Mayor delay = menor riesgo de bloqueo (recomendado: 2000ms)</p>
+                </div>
+
+                <button id="startCheck" class="btn btn-primary" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    Verificar Disponibilidad
+                </button>
+            </section>
+
+            <!-- Progress Section -->
+            <section id="progressSection" class="card progress-section hidden">
+                <h2>📊 Progreso</h2>
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="progressText">0 / 0 dominios verificados</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="card results-section hidden">
+                <div class="results-header">
+                    <h2>📋 Resultados</h2>
+                    <div class="results-actions">
+                        <button id="exportCSV" class="btn btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Exportar CSV
+                        </button>
+                        <button id="exportJSON" class="btn btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Exportar JSON
+                        </button>
+                    </div>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card available">
+                        <div class="summary-icon">✓</div>
+                        <div class="summary-content">
+                            <span class="summary-label">Disponibles</span>
+                            <span id="availableCount" class="summary-value">0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card registered">
+                        <div class="summary-icon">✗</div>
+                        <div class="summary-content">
+                            <span class="summary-label">Registrados</span>
+                            <span id="registeredCount" class="summary-value">0</span>
+                        </div>
+                    </div>
+                    <div class="summary-card error">
+                        <div class="summary-icon">!</div>
+                        <div class="summary-content">
+                            <span class="summary-label">Errores</span>
+                            <span id="errorCount" class="summary-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Dominio</th>
+                                <th>Estado</th>
+                                <th>Tiempo</th>
+                                <th>Caché</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Desarrollado con ❤️ usando WHOIS | <a href="https://github.com" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script src="js/app.js" type="module"></script>
+</body>
+</html>
