@@ -17,6 +17,7 @@ function init() {
     initDelayInput();
     initCheckButton();
     initExportButtons();
+    initFilters();
 }
 
 /**
@@ -238,6 +239,9 @@ function onComplete(data) {
     document.getElementById('registeredCount').textContent = summary.registered;
     document.getElementById('errorCount').textContent = summary.errors;
 
+    // Actualizar contadores de filtros
+    updateFilterCounts();
+
     // Resetear botón
     resetCheckButton();
 
@@ -280,6 +284,81 @@ function initExportButtons() {
     document.getElementById('exportJSON').addEventListener('click', () => {
         exportToJSON();
     });
+}
+
+/**
+ * Inicializa los filtros
+ */
+function initFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remover active de todos
+            filterButtons.forEach(b => b.classList.remove('active'));
+
+            // Agregar active al clickeado
+            btn.classList.add('active');
+
+            // Aplicar filtro
+            const filter = btn.dataset.filter;
+            applyFilter(filter);
+        });
+    });
+}
+
+/**
+ * Aplica el filtro a la tabla
+ * @param {string} filter - Tipo de filtro ('all', 'available', 'registered', 'error')
+ */
+function applyFilter(filter) {
+    const tbody = document.getElementById('resultsTableBody');
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const statusBadge = row.querySelector('.status-badge');
+
+        if (!statusBadge) {
+            row.style.display = '';
+            return;
+        }
+
+        if (filter === 'all') {
+            row.style.display = '';
+        } else {
+            const hasClass = statusBadge.classList.contains(filter);
+            row.style.display = hasClass ? '' : 'none';
+        }
+    });
+}
+
+/**
+ * Actualiza los contadores de filtros
+ */
+function updateFilterCounts() {
+    const tbody = document.getElementById('resultsTableBody');
+    const rows = tbody.querySelectorAll('tr');
+
+    let availableCount = 0;
+    let registeredCount = 0;
+    let errorCount = 0;
+
+    rows.forEach(row => {
+        const statusBadge = row.querySelector('.status-badge');
+        if (!statusBadge) return;
+
+        if (statusBadge.classList.contains('available')) availableCount++;
+        else if (statusBadge.classList.contains('registered')) registeredCount++;
+        else if (statusBadge.classList.contains('error')) errorCount++;
+    });
+
+    const totalCount = rows.length;
+
+    // Actualizar contadores en los botones
+    document.getElementById('filterAllCount').textContent = totalCount;
+    document.getElementById('filterAvailableCount').textContent = availableCount;
+    document.getElementById('filterRegisteredCount').textContent = registeredCount;
+    document.getElementById('filterErrorCount').textContent = errorCount;
 }
 
 // Inicializar cuando el DOM esté listo

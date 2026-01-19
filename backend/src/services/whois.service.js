@@ -67,11 +67,20 @@ class WhoisService {
      * @returns {Promise<Object>}
      */
     async performWhoisLookup(domain) {
+        // Obtener extensión del dominio
+        const extension = domain.substring(domain.lastIndexOf('.'));
+
+        // TLDs problemáticos que requieren manejo especial
+        const problematicTLDs = ['.app', '.dev', '.page', '.new'];
+
         try {
-            const data = await whois(domain, {
-                timeout: config.whoisTimeout,
+            // Configuración especial para TLDs problemáticos
+            const whoisConfig = {
+                timeout: problematicTLDs.includes(extension) ? 15000 : config.whoisTimeout,
                 follow: 3
-            });
+            };
+
+            const data = await whois(domain, whoisConfig);
 
             // Determinar disponibilidad basado en la respuesta
             const available = this.isDomainAvailable(data, domain);
@@ -83,8 +92,36 @@ class WhoisService {
             if (this.isNotFoundError(error.message)) {
                 return { available: true, data: null };
             }
+
+            // Si es un error de timeout o conexión con TLD problemático
+            if (this.isTimeoutOrConnectionError(error.message) && problematicTLDs.includes(extension)) {
+                console.warn(`⚠️  WHOIS timeout/connection error for ${domain} - TLD ${extension} may require special handling`);
+                throw new Error(`El TLD ${extension} requiere verificación manual. WHOIS no disponible para esta extensión.`);
+            }
+
             throw error;
         }
+    }
+
+    /**
+     * Verifica si el error es de timeout o conexión
+     * @param {string} errorMessage - Mensaje de error
+     * @returns {boolean}
+     */
+    isTimeoutOrConnectionError(errorMessage) {
+        const timeoutPatterns = [
+            'timeout',
+            'timed out',
+            'econnrefused',
+            'enotfound',
+            'etimedout',
+            'connection',
+            'socket hang up',
+            'network'
+        ];
+
+        const errorLower = errorMessage.toLowerCase();
+        return timeoutPatterns.some(pattern => errorLower.includes(pattern));
     }
 
     /**
@@ -99,44 +136,104 @@ class WhoisService {
         // Convertir a string para análisis
         const dataStr = JSON.stringify(data).toLowerCase();
 
-        // Patrones que indican dominio NO disponible (registrado)
-        const registeredPatterns = [
+        // Si la respuesta está vacía o es muy corta, probablemente está disponible
+        if (dataStr.length < 50) return true;
+
+        // IMPORTANTE: Verificar patrones de REGISTRO primero (más confiables)
+        // Si encontramos evidencia clara de que está registrado, retornar false inmediatamente
+        const strongRegisteredPatterns = [
             'registrar:',
+            'registrar url:',
+            'registrar iana id:',
             'creation date:',
+            'created on:',
             'created:',
+            'registered on:',
             'registered:',
+            'registration date:',
+            'domain status: clienttransferprohibited',
             'domain status: active',
             'status: active',
-            'nameserver',
-            'name server'
+            'status: registered',
+            'nameserver:',
+            'name server:',
+            'nserver:',
+            'dns:',
+            'registrant organization:',
+            'registrant name:',
+            'registrant:',
+            'admin contact:',
+            'admin email:',
+            'technical contact:',
+            'tech email:',
+            'expiration date:',
+            'expiry date:',
+            'expires on:',
+            'expires:',
+            'updated date:',
+            'last updated:',
+            'registry expiry date:',
+            'dnssec:',
+            'whois server:'
         ];
 
-        // Patrones que indican dominio disponible
+        // Contar cuántos patrones de registro encontramos
+        let registeredPatternCount = 0;
+        for (const pattern of strongRegisteredPatterns) {
+            if (dataStr.includes(pattern)) {
+                registeredPatternCount++;
+                // Si encontramos 2 o más patrones fuertes, definitivamente está registrado
+                if (registeredPatternCount >= 2) {
+                    console.log(`✓ Domain ${domain} is REGISTERED (found ${registeredPatternCount} registration indicators)`);
+                    return false;
+                }
+            }
+        }
+
+        // Si encontramos al menos 1 patrón de registro, es muy probable que esté registrado
+        if (registeredPatternCount >= 1) {
+            console.log(`✓ Domain ${domain} is likely REGISTERED (found ${registeredPatternCount} registration indicator)`);
+            return false;
+        }
+
+        // Ahora verificar patrones de disponibilidad (solo si NO encontramos patrones de registro)
         const availablePatterns = [
+            'no match for',
             'no match',
             'not found',
             'no entries found',
             'no data found',
-            'available',
-            'free',
-            'no se encontró'
+            'status: available',
+            'status: free',
+            'available for registration',
+            'is available',
+            'no se encontró',
+            'not registered',
+            'no existe',
+            'disponible para',
+            'domain not found',
+            'no object found',
+            'no matching record',
+            'no information available',
+            'domain name not known'
         ];
 
-        // Verificar patrones de disponibilidad primero
         for (const pattern of availablePatterns) {
             if (dataStr.includes(pattern)) {
+                console.log(`✓ Domain ${domain} is AVAILABLE (matched pattern: "${pattern}")`);
                 return true;
             }
         }
 
-        // Verificar patrones de registro
-        for (const pattern of registeredPatterns) {
-            if (dataStr.includes(pattern)) {
-                return false;
-            }
+        // Si no encontramos patrones claros de ningún tipo, verificar la longitud de la respuesta
+        // Respuestas muy cortas suelen indicar dominio disponible
+        if (dataStr.length < 200) {
+            console.log(`⚠️  Domain ${domain} - Short response (${dataStr.length} chars), assuming AVAILABLE`);
+            return true;
         }
 
-        // Si no hay información clara, asumir no disponible por seguridad
+        // Por defecto, si no estamos seguros, asumir NO disponible (más seguro)
+        console.log(`⚠️  Domain ${domain} - Uncertain status, assuming REGISTERED (safe default)`);
         return false;
     }
 

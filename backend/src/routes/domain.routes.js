@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { config } from '../config/config.js';
 import { whoisService } from '../services/whois.service.js';
+import { godaddyService } from '../services/godaddy.service.js';
 import { cacheService } from '../services/cache.service.js';
 import { rateLimiter } from '../utils/rateLimiter.js';
 import {
@@ -11,6 +12,16 @@ import {
 } from '../utils/fileParser.js';
 
 const router = express.Router();
+
+// Seleccionar servicio de dominios basado en configuración
+function getDomainService() {
+    if (config.domainProvider === 'godaddy' && godaddyService.isConfigured()) {
+        console.log('✓ Using GoDaddy API for domain verification');
+        return godaddyService;
+    }
+    console.log('⚠️  Using WHOIS for domain verification (GoDaddy not configured)');
+    return whoisService;
+}
 
 // Configurar multer para subida de archivos
 const upload = multer({
@@ -98,10 +109,13 @@ router.post('/check', async (req, res) => {
         const results = [];
         const total = domainsToCheck.length;
 
+        // Obtener servicio de dominios
+        const domainService = getDomainService();
+
         // Verificar cada dominio
         for (let i = 0; i < domainsToCheck.length; i++) {
             const domain = domainsToCheck[i];
-            const result = await whoisService.checkDomain(domain);
+            const result = await domainService.checkDomain(domain);
             results.push(result);
 
             // Enviar progreso
@@ -152,7 +166,8 @@ router.post('/check-single', async (req, res) => {
             });
         }
 
-        const result = await whoisService.checkDomain(domain);
+        const domainService = getDomainService();
+        const result = await domainService.checkDomain(domain);
 
         res.json({
             success: true,
@@ -202,7 +217,9 @@ router.get('/config', (req, res) => {
             supportedTLDs: config.supportedTLDs,
             rateLimitDelay: config.rateLimitDelay,
             maxFileSize: config.maxFileSize,
-            cacheTTL: config.cacheTTL
+            cacheTTL: config.cacheTTL,
+            domainProvider: config.domainProvider,
+            godaddyConfigured: godaddyService.isConfigured()
         }
     });
 });
